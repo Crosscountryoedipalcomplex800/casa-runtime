@@ -298,6 +298,24 @@ At 1M agent actions per day:
 
 ---
 
+## Where CASA Sits in the Stack
+
+The AI agent governance market is forming in three distinct layers. CASA owns the execution layer.
+
+| Layer | Representative Tools | What It Does | When It Operates |
+|---|---|---|---|
+| Pre-deployment testing | Promptfoo (acquired by OpenAI, March 2026) | Red-teaming, vulnerability scanning, evals | Before deployment |
+| Runtime policy enforcement | Galileo Agent Control (released March 2026) | Behavioral policies, content guardrails, observability | At runtime — content layer |
+| **Execution governance** | **CASA** | **Deterministic admissibility gate — structural vector evaluation** | **Pre-execution — before any system is touched** |
+
+These are not competing tools. They are different layers of the same problem. Promptfoo finds vulnerabilities before you ship. Galileo enforces behavioral policies at runtime. CASA makes a deterministic admissibility decision on every action before it executes — based on the structural vector of the request, not its content.
+
+CASA does not read what agents say. CASA decides whether agents are allowed to act.
+
+The distinction matters because content-layer tools can be bypassed. A jailbroken prompt, a manipulated instruction, or a carefully worded request can look compliant at the content layer while executing a catastrophic action. CASA never reads the content. The gate evaluates the structure of what is being requested — who is asking, what they want to do, to whom, with what authorization, at what magnitude, with what reversibility. That vector cannot be jailbroken.
+
+---
+
 ## Why This Matters
 
 Modern AI systems are moving from conversational interfaces to autonomous tool-using agents. The critical safety problem is no longer what models say. It is what they are allowed to execute.

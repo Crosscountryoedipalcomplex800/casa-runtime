@@ -165,8 +165,10 @@ if result.verdict == Verdict.GOVERN:
 proceed()
 ```
 
-See [`sdk/python/casa_client.py`](sdk/python/casa_client.py) for the full typed interface.  
-See [`docs/integration.md`](docs/integration.md) for gateway, sidecar, and agent runtime patterns.
+See sdk/python/casa_client.py for the full typed interface.
+See docs/integration.md for gateway, sidecar, and agent runtime patterns.
+
+This repository exposes the public interface, integration patterns, and validation layer. Enterprise runtime materials are available separately under NDA.
 
 ---
 
@@ -292,7 +294,7 @@ For a complete map of every claim in this repository to its evidence tier — wh
 Inquiries regarding research collaboration, enterprise evaluation, or commercial licensing:
 
 **Christopher T. Herndon** · Founder, The Resonance Institute, LLC  
-chrisherndonsr@gmail.com · 949-745-1607
+contact@resonanceinstitutellc.com
 
 *Pre-NDA materials available immediately. Full technical package under NDA.*
 

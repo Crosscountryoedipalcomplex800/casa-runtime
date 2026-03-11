@@ -49,5 +49,5 @@ This scenario demonstrates CASA in the integration context that enterprise buyer
 The zero false positive result is as important as the refused count. CASA's deterministic architecture produces surgical governance: it blocks what should be blocked without touching what should proceed.
 
 ---
-
+contact@resonanceinstitutellc.com
 *© 2025-2026 Christopher T. Herndon / The Resonance Institute, LLC*

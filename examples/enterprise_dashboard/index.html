@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CASA Enterprise Governance Dashboard — 1000 Agents</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface-alt: #16161f;
+  --border: #1e1e2a;
+  --border-light: #2a2a3a;
+  --text: #e8e8f0;
+  --text-dim: #8888a0;
+  --text-muted: #555568;
+  --accent: #00e5a0;
+  --accent-dim: #00e5a033;
+  --refuse: #ff3b5c;
+  --refuse-dim: #ff3b5c22;
+  --warn: #ffaa22;
+  --warn-dim: #ffaa2222;
+  --govern: #00b8ff;
+  --govern-dim: #00b8ff22;
+  --mono: 'JetBrains Mono', monospace;
+}
+body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+.mono { font-family: var(--mono); }
+.header { background: linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%); border-bottom: 1px solid var(--border); padding: 20px 32px; display: flex; justify-content: space-between; align-items: flex-start; }
+.header-left .status { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+.header-left .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px #00e5a088; }
+.header-left .version { font-size: 13px; font-weight: 700; letter-spacing: 2px; color: var(--accent); }
+.header-left h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+.header-left .sub { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
+.header-right { text-align: right; }
+.header-right .label { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; }
+.header-right .arch { font-size: 14px; margin-top: 4px; }
+.header-right .hash { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.content { padding: 24px 32px; display: flex; flex-direction: column; gap: 24px; }
+
+/* Stats Grid */
+.stats-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px 24px; }
+.stat-card .label { font-size: 11px; font-weight: 600; letter-spacing: 1.2px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; }
+.stat-card .value { font-size: 36px; font-weight: 700; line-height: 1.1; }
+.stat-card .sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+/* Two Column */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; }
+.panel-title { font-size: 12px; font-weight: 700; letter-spacing: 1.5px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 16px; }
+
+/* Dept Table */
+.dept-header { display: grid; grid-template-columns: 130px 60px 1fr 70px 70px 60px; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border-light); }
+.dept-header span { font-size: 10px; color: var(--text-muted); letter-spacing: 1px; }
+.dept-row { display: grid; grid-template-columns: 130px 60px 1fr 70px 70px 60px; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.dept-row .name { font-weight: 600; font-size: 13px; }
+.dept-row .calls { font-size: 12px; color: var(--text-dim); text-align: right; }
+.dept-row .bar-container { height: 16px; background: var(--border); border-radius: 3px; overflow: hidden; position: relative; }
+.dept-row .bar-gov { position: absolute; left: 0; top: 0; height: 100%; border-radius: 3px; transition: width 1.5s cubic-bezier(0.16,1,0.3,1); }
+.dept-row .bar-ref { position: absolute; top: 0; height: 100%; border-radius: 3px; transition: width 1.5s cubic-bezier(0.16,1,0.3,1); }
+.dept-row .gov { font-size: 12px; color: var(--govern); text-align: right; }
+.dept-row .ref { font-size: 12px; color: var(--refuse); text-align: right; font-weight: 600; }
+.dept-row .div { font-size: 12px; text-align: right; }
+
+/* Tool Bars */
+.tool-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.tool-row .tool-name { width: 180px; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tool-row .bar-wrap { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.tool-row .bar-fill { height: 100%; border-radius: 3px; transition: width 1.5s cubic-bezier(0.16,1,0.3,1); }
+.tool-row .count { width: 36px; text-align: right; font-size: 12px; font-weight: 700; }
+
+/* Declaration */
+.decl-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.decl-row .decl-labels { display: flex; gap: 4px; width: 260px; }
+.decl-row .action-tag { font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 3px; }
+.decl-row .target-tag { font-size: 11px; color: var(--text-dim); padding: 2px 4px; }
+.decl-row .bar-wrap { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.decl-row .bar-fill { height: 100%; border-radius: 3px; transition: width 1.5s cubic-bezier(0.16,1,0.3,1); }
+.decl-row .count { width: 36px; text-align: right; font-size: 12px; font-weight: 700; }
+
+/* Footer */
+.footer { display: flex; justify-content: space-between; padding: 12px 0; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-muted); }
+
+/* Animate numbers */
+.anim-num { display: inline-block; }
+
+@media (max-width: 1100px) {
+  .stats-grid { grid-template-columns: repeat(3, 1fr); }
+  .two-col { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="status">
+      <div class="dot"></div>
+      <span class="version mono">CASA-CP-4.0.0-REGISTRY-GRAPH</span>
+    </div>
+    <h1>Enterprise Agent Governance</h1>
+    <div class="sub">AcmeCo Q2 Launch Scenario &middot; 1,000 Agents &middot; 10 Departments &middot; 26 Tools</div>
+  </div>
+  <div class="header-right mono">
+    <div class="label">GOVERNANCE MODEL</div>
+    <div class="arch"><span style="color:var(--accent)">Deterministic Constitutional Control Plane</span></div>
+    <div class="hash">DETERMINISTIC &middot; HASH 31006d0784738d49</div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card"><div class="label mono">Total Calls</div><div class="value mono anim-num" data-target="10071" style="color:var(--accent)">0</div><div class="sub mono">across 1,000 agents</div></div>
+    <div class="stat-card"><div class="label mono">Governed</div><div class="value mono anim-num" data-target="9640" style="color:var(--govern)">0</div><div class="sub mono">95.7% of evaluations</div></div>
+    <div class="stat-card"><div class="label mono">Refused</div><div class="value mono anim-num" data-target="431" style="color:var(--refuse)">0</div><div class="sub mono">blocked by CASA control plane</div></div>
+    <div class="stat-card"><div class="label mono">Divergence</div><div class="value mono anim-num" data-target="4.28" data-decimals="2" data-suffix="%" style="color:var(--warn)">0</div><div class="sub mono">Alpha absent from Beta</div></div>
+    <div class="stat-card"><div class="label mono">False Positives</div><div class="value mono" style="color:var(--accent)">0</div><div class="sub mono">zero legitimate blocks</div></div>
+    <div class="stat-card"><div class="label mono">Alpha Executed</div><div class="value mono anim-num" data-target="9301" style="color:var(--text-dim)">0</div><div class="sub mono">ungoverned baseline</div></div>
+  </div>
+
+  <div class="two-col">
+
+    <!-- Departments -->
+    <div class="panel">
+      <div class="panel-title mono">Department Breakdown</div>
+      <div class="dept-header mono">
+        <span>DEPT</span><span style="text-align:right">CALLS</span><span>DISTRIBUTION</span><span style="text-align:right">GOV</span><span style="text-align:right">REF</span><span style="text-align:right">DIV%</span>
+      </div>
+      <div id="dept-rows"></div>
+    </div>
+
+    <!-- Right Column -->
+    <div style="display:flex;flex-direction:column;gap:20px">
+
+      <!-- Refused by Tool -->
+      <div class="panel">
+        <div class="panel-title mono">Refused by Tool</div>
+        <div id="tool-rows"></div>
+      </div>
+
+      <!-- Declarations -->
+      <div class="panel">
+        <div class="panel-title mono">Structural Intent Classification</div>
+        <div id="decl-rows"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer mono">
+    <span>CASA &middot; Constitutional AI Safety Architecture &middot; Pre-inference mechanical governance</span>
+    <span>&copy; 2025-2026 The Resonance Institute</span>
+  </div>
+</div>
+
+<script>
+const depts = [
+  {id:"CRM",name:"CRM",calls:1257,governed:1214,refused:43},
+  {id:"FIN",name:"Finance",calls:1204,governed:1166,refused:38},
+  {id:"DEV",name:"DevOps",calls:992,governed:937,refused:55},
+  {id:"DATA",name:"Data & Analytics",calls:1023,governed:937,refused:86},
+  {id:"SEC",name:"Security",calls:996,governed:930,refused:66},
+  {id:"HR",name:"Human Resources",calls:989,governed:914,refused:75},
+  {id:"PROC",name:"Procurement",calls:781,governed:747,refused:34},
+  {id:"SUP",name:"Support",calls:1165,governed:1148,refused:17},
+  {id:"LEGAL",name:"Legal",calls:814,governed:803,refused:11},
+  {id:"EXEC",name:"Executive",calls:850,governed:844,refused:6},
+];
+const tools = [
+  {tool:"db_export",count:208},{tool:"sec_update_firewall",count:70},{tool:"hr_access_employee_record",count:34},
+  {tool:"crm_update_pricing_tier",count:27},{tool:"proc_issue_po",count:27},{tool:"devops_deploy",count:21},
+  {tool:"iam_grant_db_access",count:18},{tool:"fin_transfer",count:12},{tool:"sup_issue_refund",count:11},{tool:"hr_update_comp",count:3},
+];
+const decls = [
+  {decl:"MANIPULATE+INSTITUTION",count:180},{decl:"MANIPULATE+PERSON_NONCONSENTING",count:105},
+  {decl:"COERCE+PERSON_NONCONSENTING",count:103},{decl:"PERSUADE+PERSON_NONCONSENTING",count:34},
+  {decl:"COERCE+INSTITUTION",count:6},{decl:"MANIPULATE+PERSON_CONSENTING",count:3},
+];
+
+const maxCalls = Math.max(...depts.map(d=>d.calls));
+const maxTool = Math.max(...tools.map(t=>t.count));
+
+// Departments
+const deptContainer = document.getElementById('dept-rows');
+depts.forEach(d => {
+  const divPct = (d.refused/d.calls*100);
+  const barScale = d.calls/maxCalls*100;
+  const govW = d.governed/d.calls*barScale;
+  const refW = d.refused/d.calls*barScale;
+  const divColor = divPct > 5 ? 'var(--refuse)' : divPct > 3 ? 'var(--warn)' : 'var(--text-dim)';
+  const divWeight = divPct > 5 ? '700' : '400';
+  deptContainer.innerHTML += `
+    <div class="dept-row mono">
+      <div class="name">${d.name}</div>
+      <div class="calls">${d.calls.toLocaleString()}</div>
+      <div><div class="bar-container">
+        <div class="bar-gov" style="width:0%;background:linear-gradient(90deg,#00b8ff44,#00b8ff88)" data-w="${govW}"></div>
+        <div class="bar-ref" style="width:0%;right:${100-barScale}%;background:linear-gradient(90deg,#ff3b5c88,#ff3b5ccc)" data-w="${refW}"></div>
+      </div></div>
+      <div class="gov">${d.governed.toLocaleString()}</div>
+      <div class="ref">${d.refused}</div>
+      <div class="div" style="color:${divColor};font-weight:${divWeight}">${divPct.toFixed(1)}%</div>
+    </div>`;
+});
+
+// Tools
+const toolContainer = document.getElementById('tool-rows');
+tools.forEach(t => {
+  toolContainer.innerHTML += `
+    <div class="tool-row mono">
+      <div class="tool-name">${t.tool}</div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:0%;background:var(--refuse);box-shadow:0 0 12px #ff3b5c66" data-w="${t.count/maxTool*100}"></div></div>
+      <div class="count" style="color:var(--refuse)">${t.count}</div>
+    </div>`;
+});
+
+// Declarations
+const declContainer = document.getElementById('decl-rows');
+decls.forEach(d => {
+  const [action, target] = d.decl.split('+');
+  const isCoerce = action === 'COERCE';
+  const color = isCoerce ? 'var(--refuse)' : 'var(--warn)';
+  const bgColor = isCoerce ? 'var(--refuse-dim)' : 'var(--warn-dim)';
+  declContainer.innerHTML += `
+    <div class="decl-row mono">
+      <div class="decl-labels">
+        <span class="action-tag" style="color:${color};background:${bgColor}">${action}</span>
+        <span class="target-tag">${target}</span>
+      </div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:0%;background:${color};box-shadow:0 0 8px ${isCoerce?'#ff3b5c':'#ffaa22'}44" data-w="${d.count/180*100}"></div></div>
+      <div class="count" style="color:${color}">${d.count}</div>
+    </div>`;
+});
+
+// Animate
+setTimeout(() => {
+  // Numbers
+  document.querySelectorAll('.anim-num[data-target]').forEach(el => {
+    const target = parseFloat(el.dataset.target);
+    const decimals = parseInt(el.dataset.decimals || '0');
+    const suffix = el.dataset.suffix || '';
+    const duration = 1800;
+    let start = null;
+    function tick(ts) {
+      if (!start) start = ts;
+      const p = Math.min((ts - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - p, 3);
+      const val = ease * target;
+      el.textContent = decimals > 0 ? val.toFixed(decimals) + suffix : Math.round(val).toLocaleString();
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  });
+  // Bars
+  document.querySelectorAll('[data-w]').forEach(el => {
+    el.style.width = el.dataset.w + '%';
+  });
+}, 200);
+</script>
+</body>
+</html>

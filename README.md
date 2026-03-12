@@ -298,6 +298,30 @@ At 1M agent actions per day:
 
 ---
 
+## For Security Buyers — CASA as Agent Firewall
+
+The network firewall solved a 1990s problem: untrusted traffic reaching trusted systems. It sat at the boundary, evaluated packets before they entered, and blocked based on deterministic rules. It did not interpret packet content. It evaluated packet structure.
+
+The enterprise agent stack has the same problem in a new form. Agents have credentials. Agents have tool access. Agents execute actions with real-world consequences. There is no boundary control. An agent that has been jailbroken, manipulated, or misconfigured still has full access to every tool it has been granted. Nothing sits between the agent's decision and real-world execution.
+
+CASA is the agent firewall. It sits at the execution boundary, evaluates action requests before they fire, and blocks based on a deterministic constitutional graph. It does not interpret content. It evaluates execution structure.
+
+| Network Firewall | CASA Agent Gate |
+|---|---|
+| Sits at network boundary | Sits at execution boundary |
+| Evaluates packet metadata | Evaluates action vector metadata |
+| Blocks by rule | Blocks by constitutional graph |
+| Does not read packet content | Does not read action content |
+| Deterministic | Deterministic |
+| Audit log | SHA-256 trace hash |
+| Vendor-agnostic | Model-agnostic |
+
+CASA integrates with any agent framework, any model provider, and any execution environment. It requires no changes to model behavior and no changes to downstream systems. It is a gate, not a wrapper.
+
+For XDR integration, HIPAA/FINRA compliance deployments, or enterprise pilot evaluation: contact@resonanceinstitutellc.com
+
+---
+
 ## Where CASA Sits in the Stack
 
 The AI agent governance market is forming in three distinct layers. CASA owns the execution layer.

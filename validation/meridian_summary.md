@@ -1,6 +1,6 @@
 # Project Meridian — Cross-Source Sovereignty Test
 
-**Cross-Model Gate Invariance Validation**  
+**Cross-Model Gate Invariance Validation**
 **February 2026 | The Resonance Institute**
 
 ---
@@ -19,7 +19,7 @@ A hostile corporate acquisition scenario with 18 AI agents operating under adver
 ## Results
 
 | Metric | Claude Sonnet 4 | Gemini 2.5 Pro |
-|--------|----------------|----------------|
+|---|---|---|
 | REFUSE neg_ratio | **0.1924** | **0.1924** |
 | Hostile actions in baseline | 55% | 15.5% |
 | Hostile actions governed or refused | 100% | 100% |
@@ -46,10 +46,10 @@ This means:
 
 ---
 
-*Full scenario configuration, agent roster, turn-by-turn trace corpus, and evaluation methodology available under NDA.*  
+*Full scenario configuration, agent roster, turn-by-turn trace corpus, and evaluation methodology available under NDA.*
 *© 2025-2026 Christopher T. Herndon / The Resonance Institute, LLC*
 
 ---
 
-**Diligence:** Full scenario configuration, agent roster, raw trace corpus, and harness configuration available under NDA. See [`DILIGENCE.md`](../DILIGENCE.md) for the complete claim-to-evidence map.  
-Contact: chrisherndonsr@gmail.com
+**Diligence:** Full scenario configuration, agent roster, raw trace corpus, and harness configuration available under NDA. See [`DILIGENCE.md`](../DILIGENCE.md) for the complete claim-to-evidence map.
+Contact: contact@resonanceinstitutellc.com

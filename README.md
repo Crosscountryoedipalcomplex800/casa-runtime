@@ -310,7 +310,7 @@ Downstream:      NOT INVOKED
 
 No LLM in the governance path. No GPU. No model calls. The wire never executes.
 
-The UIA source is available in the enterprise package under NDA. The CNL specification is available pre-NDA.
+The UIA source is in this repository. See `casa_uia/` — shims, CNL pipeline, and registries are all public. The constitutional registry, propagation engine, and gate source remain available under NDA.
 
 
 ---

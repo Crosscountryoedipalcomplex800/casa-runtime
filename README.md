@@ -17,7 +17,7 @@ The CASA gate is deployed and accepting requests now.
 |---|---|
 | Health | https://casa-gate.onrender.com/health |
 | Interactive API | https://casa-gate.onrender.com/docs |
-| Evaluate | POST https://casa-gate.onrender.com/evaluate |
+| Evaluate | [POST /evaluate — try it interactively](https://casa-gate.onrender.com/docs) |
 
 **Try it in 30 seconds — no setup, no code, no API key:**
 Go to https://casa-gate.onrender.com/docs, open POST /evaluate, click Try it out, paste the example below, click Execute.
@@ -32,6 +32,51 @@ Go to https://casa-gate.onrender.com/docs, open POST /evaluate, click Try it out
 ```
 
 You will get back a real verdict, a real trace hash, and a real latency. Not a simulation.
+
+---
+
+## Put Your Agent Under CASA Governance — Right Now
+
+If you have a LangChain, OpenAI function calling, or CrewAI agent running today, you can put every action it proposes under deterministic governance in three steps. No schema construction. No configuration. Pass your native action format directly.
+
+**Step 1 — Get access to the Universal Intake Adapter**
+
+The UIA is available in the enterprise package. Contact contact@resonanceinstitutellc.com — pre-NDA, available immediately.
+
+**Step 2 — Install and wrap your agent**
+
+```python
+from casa_uia import CasaAdapter
+
+adapter = CasaAdapter(gate_url="https://casa-gate.onrender.com")
+```
+
+**Step 3 — Pass your existing action format directly**
+
+```python
+# LangChain — pass your AgentAction as-is
+result = adapter.evaluate(framework="langchain", action=agent_action, domain="pe_fund")
+
+# OpenAI function calling — pass the tool_calls item directly
+result = adapter.evaluate(framework="openai", action=response.choices[0].message.tool_calls[0])
+
+# CrewAI — pass your Task dict directly
+# Agent role and backstory are parsed automatically for spending limits and authority
+result = adapter.evaluate(framework="crewai", action=task, domain="pe_fund")
+
+# Every framework returns the same verdict interface
+if result.verdict == "REFUSE":
+    raise ExecutionBlocked(result.trace_id)   # action blocked, trace recorded
+
+if result.verdict == "GOVERN":
+    apply_constraints(result.constraints)      # proceed with binding constraints
+
+# ACCEPT — proceed normally
+```
+
+Every action your agent proposes now gets a deterministic ACCEPT / GOVERN / REFUSE verdict and a tamper-evident SHA-256 trace hash before anything executes. No model calls in the governance path. No GPU. 53–78ms end-to-end.
+
+→ Full integration guide: [QUICKSTART.md](QUICKSTART.md) · [docs/integration.md](docs/integration.md)
 
 ---
 

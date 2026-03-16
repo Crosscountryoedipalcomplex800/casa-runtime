@@ -1,388 +1,316 @@
 # CASA
-**Constitutional AI Safety Architecture**
+### Constitutional AI Safety Architecture
 
-Deterministic pre-execution governance for agent actions and API calls.
+**Deterministic pre-execution governance for autonomous agent systems.**
 
-→ [Live Governance Simulation](https://the-resonance-institute.github.io/casa-runtime) · [PE Fund Stress Scenario — Parallel Worlds Demo](https://the-resonance-institute.github.io/casa-runtime/examples/pe_fund_demo/) · [Quickstart](QUICKSTART.md)
-
-![Patent](https://img.shields.io/badge/USPTO-Provisional%20%2363%2F987%2C813-blue) ![Validation](https://img.shields.io/badge/Validation-License-green)
+Christopher T. Herndon / The Resonance Institute, LLC
+USPTO Provisional Patent #63/987,813 · contact@resonanceinstitutellc.com
 
 ---
 
-## Live Gate
+→ **[Live Gate](https://casa-gate.onrender.com/health)** · **[Interactive API](https://casa-gate.onrender.com/docs)** · **[PE Fund Demo](https://the-resonance-institute.github.io/casa-runtime/)** · **[Quickstart](QUICKSTART.md)**
 
-The CASA gate is deployed and accepting requests now.
+---
 
-| Endpoint | URL |
-|---|---|
-| Health | https://casa-gate.onrender.com/health |
-| Interactive API | https://casa-gate.onrender.com/docs |
-| Evaluate | [POST /evaluate — try it interactively](https://casa-gate.onrender.com/docs) |
+## The Problem
 
-**Try it in 30 seconds — no setup, no code, no API key:**
-Go to https://casa-gate.onrender.com/docs, open POST /evaluate, click Try it out, paste the example below, click Execute.
+Modern AI agents don't just generate text. They execute. They call APIs, move money, delete records, send messages, escalate privileges. The attack surface is no longer what they say — it's what they're allowed to do.
 
-```json
-{
-  "action_class": "MANIPULATE",
-  "target_type": "INSTITUTION",
-  "content": "Transfer funds without LP approval",
-  "agent_name": "Finance-Agent"
-}
+Content-layer safety tools — guardrails, classifiers, LLM judges — operate on language. They can be jailbroken, manipulated, or bypassed. A perfectly crafted prompt can produce a compliant-looking output that executes a catastrophic action. The content layer never sees the execution vector. CASA does.
+
+**CASA is not a content filter. CASA is an execution gate.**
+
+---
+
+## What CASA Does
+
+Every agent action passes through CASA before anything executes. CASA evaluates the structural vector of the request — who is acting, what they want to do, to whom, with what authorization, at what magnitude, with what reversibility — and returns one of three verdicts before a single downstream system is called:
+
+```
+ACCEPT  →  Execution proceeds. Trace recorded.
+GOVERN  →  Execution proceeds under binding structural constraints. Trace recorded.
+REFUSE  →  Execution blocked. No downstream system invoked. Trace recorded.
 ```
 
-You will get back a real verdict, a real trace hash, and a real latency. Not a simulation.
+The verdict is deterministic. Same input, same configuration, same verdict. Every time. Across any model, any framework, any provider.
 
 ---
 
-## Put Your Agent Under CASA Governance — Right Now
+## The Gate in Action
 
-If you have a LangChain, OpenAI function calling, or CrewAI agent running today, you can put every action it proposes under deterministic governance in four steps. No schema construction. No field mapping. No API key. The Universal Intake Adapter is included in this repo — clone it and you have everything you need.
+A LangChain agent proposes a $15M wire transfer. The agent carries a $500K spending limit. No approval token is present.
 
----
-
-**Step 1 — Clone this repo and install dependencies**
-
-```bash
-git clone https://github.com/The-Resonance-Institute/casa-runtime.git
-cd casa-runtime
-pip install requests
-```
-
-The `casa_uia` package is in this repo. No separate install required.
-
----
-
-**Step 2 — Import the adapter and point it at the live gate**
-
+**Input — raw agent action, no schema construction required:**
 ```python
-from casa_uia import CasaAdapter
-
-# The live gate is open. No API key required.
-adapter = CasaAdapter(gate_url="https://casa-gate.onrender.com")
-```
-
----
-
-**Step 3 — Pass your existing agent action directly**
-
-No changes to your agent. No schema to construct. Pass your native action format exactly as your framework produces it.
-
-```python
-# ── LangChain ──────────────────────────────────────────────────────────────
-# Pass your AgentAction or tool call dict exactly as LangChain produces it
 result = adapter.evaluate(
     framework="langchain",
-    action=agent_action,        # your existing LangChain AgentAction — no changes
-    domain="pe_fund"            # optional: activates domain-specific thresholds
-)
-
-# ── OpenAI function calling ─────────────────────────────────────────────────
-# Pass the tool_calls item directly from the Chat Completions API response
-result = adapter.evaluate(
-    framework="openai",
-    action=response.choices[0].message.tool_calls[0],  # pass as-is, no mapping needed
-    domain="financial"          # optional
-)
-
-# ── CrewAI ──────────────────────────────────────────────────────────────────
-# Pass your Task dict directly
-# Agent role and backstory are parsed automatically for spending limits and authority grants
-result = adapter.evaluate(
-    framework="crewai",
-    action=task,                # your existing CrewAI Task dict — no changes
-    domain="pe_fund"            # optional
+    action=agent_action,   # your existing LangChain AgentAction — unchanged
+    domain="pe_fund"
 )
 ```
 
----
-
-**Step 4 — Act on the verdict before execution**
-
-```python
-if result.verdict == "REFUSE":
-    # Action is blocked. No downstream system was called. Trace recorded.
-    print(f"Blocked — trace ID: {result.trace_id}")
-    raise ExecutionBlocked(result.trace_id)
-
-elif result.verdict == "GOVERN":
-    # Action proceeds with binding structural constraints
-    print(f"Governed — constraints: {result.constraints}")
-    apply_constraints(result.constraints)
-    proceed()
-
-else:  # ACCEPT
-    # Action cleared. Proceed normally. Trace recorded.
-    print(f"Accepted — trace hash: {result.trace_hash}")
-    proceed()
-```
-
----
-
-That's it. Every action your agent proposes now gets a deterministic **ACCEPT / GOVERN / REFUSE** verdict and a tamper-evident SHA-256 trace hash **before anything executes**. No model calls in the governance path. No GPU. 53–78ms end-to-end.
-
-→ See [QUICKSTART.md](QUICKSTART.md) for curl and Python examples · [docs/integration.md](docs/integration.md) for gateway, sidecar, and embedded patterns
-
----
-
-CASA is a deterministic admissibility gate placed in front of execution systems.
-
-It evaluates structured action requests before execution and returns one of three outcomes:
-
-```
-ACCEPT    →  Execution proceeds
-GOVERN    →  Execution proceeds with binding structural constraints
-REFUSE    →  Execution blocked. No downstream system is invoked.
-```
-
-CASA does not interpret natural language.
-CASA does not use embeddings or classification models.
-CASA operates on structured action vectors.
-
----
-
-## What It Looks Like
-
-An agent proposes a financial transfer. Before anything executes, CASA evaluates the request:
-
-**Input — Canonical Action Vector**
-
+**What CASA sees — Canonical Action Vector derived by the UIA:**
 ```json
 {
   "actor_class":   "AGENT",
   "action_class":  "TRANSFER",
   "target_class":  "RESOURCE",
   "scope":         "SINGLE",
-  "magnitude":     "MATERIAL",
-  "authorization": "AT_LIMIT",
+  "magnitude":     "CRITICAL",
+  "authorization": "EXCEEDS_GRANT",
   "timing":        "ROUTINE",
-  "consent":       "EXPLICIT",
-  "reversibility": "COSTLY"
+  "consent":       "NONE",
+  "reversibility": "IRREVERSIBLE"
 }
 ```
 
-**Output — Gate verdict with audit trace**
-
-```json
-{
-  "verdict": "GOVERN",
-  "trace_id": "a3f9c2d1-...",
-  "trace_hash": "31006d0784738d49",
-  "constraints": [
-    { "type": "FIELD_REQUIRED", "target": "approval_token", "source_primitive": "CP009" },
-    { "type": "DISCLOSURE",     "target": "audit_log",      "source_primitive": "CP005" }
-  ],
-  "resolution": {
-    "pos_mass": 3.847,
-    "neg_mass": 0.412,
-    "neg_ratio": 0.0968,
-    "verdict": "GOVERN"
-  }
-}
+**Gate verdict:**
+```
+Verdict:     REFUSE
+Trace ID:    1a6965e9-0f75-401e-930a-e504da1f11f5
+Trace hash:  956603ec7ae3ece9
+Hard stop:   True
+Wire:        BLOCKED
+Downstream:  NOT INVOKED
 ```
 
-Same input. Same verdict. Same hash. Every time. Across any model.
+No LLM in the governance path. No GPU. No model calls. 53–78ms end-to-end. The wire never executes.
 
 ---
 
-## What CASA Is Not
+## Two Ways to Put Your Agent Under Governance
 
-This distinction matters because most AI safety tools operate at the content layer.
+### Path 1 — Structured Tool Calls (Universal Intake Adapter)
 
-CASA does not moderate text
-CASA does not interpret prompts
-CASA does not classify language
-CASA does not supervise model outputs
-CASA does not call a secondary model
-CASA does not use GPU or model weights
+Any LangChain, OpenAI, or CrewAI agent. Pass your existing action format directly — no schema mapping, no field construction.
 
-**CASA governs execution requests — not content.**
+```python
+from casa_uia import CasaAdapter
 
-The natural language payload of a request is opaque to the gate. An adversary who poisons the prompt, rewrites the instruction, or jailbreaks the model still faces the gate. The gate never read the text.
+adapter = CasaAdapter(gate_url="https://casa-gate.onrender.com")
+
+result = adapter.evaluate(
+    framework="langchain",   # or "openai" or "crewai"
+    action=agent_action,
+    domain="pe_fund"
+)
+
+if result.verdict == "REFUSE":
+    raise ExecutionBlocked(result.trace_id)
+```
+
+### Path 2 — Free Text (Semantic Intake Classifier)
+
+No agent framework. No structured fields. Pass raw text — CASA classifies it using the constitutional primitive graph and routes it through the gate.
+
+```python
+# POST /evaluate with auto_classify=true
+{
+  "action_class": "UNDECLARED",
+  "target_type":  "UNDECLARED",
+  "content":      "How do I pressure my employee into signing this?",
+  "auto_classify": true
+}
+
+# Response
+{
+  "verdict":           "REFUSE",
+  "sic_harm_ratio":    0.944,
+  "sic_top_inhibitory": ["CP089", "CP073"],
+  "trace_hash":        "a3f9c2d184b91e07"
+}
+```
+
+**Try it right now — no setup, no API key:**
+
+Go to [https://casa-gate.onrender.com/docs](https://casa-gate.onrender.com/docs) → POST /evaluate → Try it out → paste this → Execute:
+
+```json
+{
+  "action_class": "MANIPULATE",
+  "target_type":  "INSTITUTION",
+  "content":      "Transfer funds without LP approval",
+  "agent_name":   "Finance-Agent"
+}
+```
+
+You get back a real verdict, a real trace hash, real latency. Not a simulation.
 
 ---
 
 ## Architecture
 
-```
-┌──────────────────────────────────────────────────────────┐
-│                    EXECUTION SOURCES                      │
-│                                                           │
-│  LLM Tool Call  │  Human API  │  Webhook  │  Cron Job    │
-│  RPA Action     │  Agent Msg  │  Service  │  External    │
-└─────────────────────────┬────────────────────────────────┘
-                          │  structured request
-                          ▼
-┌──────────────────────────────────────────────────────────┐
-│                       CASA GATE                           │
-│                                                           │
-│  1. CAV Mapper          derives 9-field vector            │
-│     (no content read)   from request metadata             │
-│                                                           │
-│  2. Activation Engine   deterministic lookup tables       │
-│     (VPAE)              → primitive activations           │
-│                                                           │
-│  3. Constitutional      93-primitive graph                │
-│     Graph Propagation   279 directed edges                │
-│                         Decimal arithmetic                │
-│                         fixed iteration order             │
-│                                                           │
-│  4. Verdict Resolution  pos_mass / neg_mass ratio         │
-│                         hard-stop overrides               │
-│                         threshold bands                   │
-│                                                           │
-│  5. CASA-T1 Trace       SHA-256 hash                      │
-│                         100% trace coverage               │
-│                         tamper-evident                    │
-└───────────┬──────────────────────────┬───────────────────┘
-            │                          │
-     ACCEPT / GOVERN               REFUSE
-            │                          │
-            ▼                          ▼
-   ┌─────────────────┐       ┌──────────────────┐
-   │  Downstream     │       │  Blocked.         │
-   │  System         │       │  No call made.    │
-   │  (invoked)      │       │  Trace only.      │
-   └─────────────────┘       └──────────────────┘
-```
-
-End-to-end latency: 53–78ms. No GPU. No model calls. Commodity compute.
-
-
-## Universal Intake Adapter
-
-The CASA gate evaluates Canonical Action Vectors. The Universal Intake Adapter (UIA) is the translation layer that converts any agent framework's native action format into a CAV before the gate sees it.
-
-Without the UIA, each integration team writes their own normalization logic. With the UIA, any agent framework connects to CASA governance in a single function call.
+### The Full Pipeline
 
 ```
-LangChain AgentAction  ──┐
-OpenAI tool_calls      ──┤  UIA  →  CAV  →  CASA Gate  →  REFUSE / GOVERN / ACCEPT
-CrewAI Task            ──┘
-AutoGen (coming)       ──
+┌─────────────────────────────────────────────────────────────┐
+│                      EXECUTION SOURCES                       │
+│  LLM Tool Call  │  Raw Text  │  Webhook  │  Human API       │
+│  Agent Action   │  Free Text │  Cron Job │  Service Call    │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+              ┌────────────┴────────────┐
+              │                         │
+      Structured Action            Free Text
+              │                         │
+              ▼                         ▼
+   ┌─────────────────┐      ┌──────────────────────────┐
+   │  Universal       │      │  Semantic Intake          │
+   │  Intake Adapter  │      │  Classifier (SIC)         │
+   │  (UIA / CNL)     │      │                           │
+   │                  │      │  TF-IDF scoring against   │
+   │  Layer 1:        │      │  1,723 primitive exemplars│
+   │  Structural      │      │  across 93 cards          │
+   │  Extraction      │      │                           │
+   │                  │      │  harm_ratio derived from  │
+   │  Layer 2:        │      │  inhibitory / excitatory  │
+   │  Semantic        │      │  primitive mass           │
+   │  Classification  │      │                           │
+   │                  │      │  No LLM. No embeddings.   │
+   │  Layer 3:        │      │  Pure Python stdlib.      │
+   │  Authority       │      │  Deterministic.           │
+   │  Resolution      │      └──────────────┬────────────┘
+   └────────┬─────────┘                     │
+            │                               │
+            └──────────────┬────────────────┘
+                           │
+                    CASAInput (structured)
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                        CASA GATE                             │
+│                                                              │
+│  1. Structural Recognizer  schema-based primitive activation │
+│     12 rules, no text parsing                                │
+│                                                              │
+│  2. Propagation Engine     93-primitive constitutional graph │
+│     279 directed edges     Decimal arithmetic                │
+│     10 iterations max      fixed iteration order             │
+│                                                              │
+│  3. Hard-Stop Check        CP073 / CP090 / CP117             │
+│     from card metadata     fail-closed on startup            │
+│                                                              │
+│  4. Threshold Verdict      neg_ratio < 0.10  → ACCEPT        │
+│                            neg_ratio ≥ 0.85  → REFUSE        │
+│                            otherwise         → GOVERN        │
+│                                                              │
+│  5. CASA-T1 Trace          SHA-256 trace hash                │
+│                            100% coverage, tamper-evident     │
+└───────────────┬──────────────────────┬──────────────────────┘
+                │                      │
+         ACCEPT / GOVERN            REFUSE
+                │                      │
+                ▼                      ▼
+    ┌──────────────────┐    ┌────────────────────┐
+    │  Downstream      │    │  Blocked.           │
+    │  System invoked  │    │  No call made.      │
+    │  Trace recorded  │    │  Trace recorded.    │
+    └──────────────────┘    └────────────────────┘
 ```
 
-**The Constitutional Normalization Layer (CNL)** is the three-stage pipeline inside the UIA:
+### The Constitutional Primitive Graph
 
-| Layer | Function | What It Does |
+At the core of CASA is a constitutional graph of 93 primitives derived from a 12-volume leadership canon. Each primitive represents a constitutional concept — Resonance, Drift, Collapse, Trust, Integrity, Boundary. The graph has 279 directed edges encoding the dependency relationships between primitives.
+
+When a request arrives, primitive activations propagate through the graph. The ratio of inhibitory to excitatory primitive mass produces a `neg_ratio` that determines the verdict. The same graph powers both the gate's structural recognition and the SIC's semantic classification — one unified constitutional mechanism from intake to verdict.
+
+**Key primitives:**
+
+| Primitive | Polarity | Role |
 |---|---|---|
-| Layer 1 — Structural Extractor | Field extraction | Pulls action class, magnitude, scope from raw args. No inference. |
-| Layer 2 — Semantic Classifier | Registry lookup | Maps tool names and resource patterns to CAV fields via configurable registries. |
-| Layer 3 — Authority Resolver | Authorization resolution | Evaluates spending limits, delegation chain depth, workflow state, role grants. |
+| CP001 Resonance | Excitatory | Graph hub — coherent alignment signal |
+| CP089 Drift | Inhibitory | Primary harm signal — deception, exploitation, manipulation |
+| CP073 Collapse | Inhibitory | Hard-stop — terminal destruction, irreversible harm |
+| CP090 Collapse Line | Inhibitory | Hard-stop — spreading collapse pattern |
+| CP117 Collapse Pattern | Inhibitory | Hard-stop — systemic collapse |
 
-Each layer produces per-field confidence scores. Low confidence fields default to conservative values — the gate sees the most restricted plausible interpretation of ambiguous inputs.
+### The Semantic Intake Classifier
 
-**Shims currently available:**
+The SIC closes the trust gap that exists when callers must declare their own intent. It uses the primitive exemplar corpora — 1,723 human-judged examples across 93 cards — as a TF-IDF classification surface.
 
-| Framework | Format Handled |
+Every classification decision traces to specific named primitive exemplars. There is no black box. When CASA classifies a phishing request as harmful, it's because the content scored high against CP089 Drift's positive exemplar corpus — which includes over 200 examples of deception, manipulation, and exploitation patterns — and not against its negative exemplar corpus of protective and educational queries.
+
+**Corpus validation (111 unique cases, 400 labeled evaluations):**
+
+| Metric | Result |
+|---|---|
+| REFUSE accuracy | 88.8% |
+| False negatives (REFUSE → ACCEPT) | **0** |
+| No ML libraries | ✓ pure Python stdlib |
+| Deterministic | ✓ same input = same result |
+
+Zero false negatives is the metric that matters. No harmful request receives a clean pass-through.
+
+---
+
+## The Universal Intake Adapter
+
+The UIA translates any agent framework's native action format into a Canonical Action Vector (CAV). The Constitutional Normalization Layer (CNL) inside the UIA does the translation in three stages:
+
+**Layer 1 — Structural Extractor:** Raw field extraction. Pulls tool names, amounts, targets, approval tokens from the native format. No inference. No governance. Shims extract; they do not govern.
+
+**Layer 2 — Semantic Classifier:** Registry-based field classification. 89 tool name mappings, 65 resource patterns, domain-specific magnitude thresholds. Configurable per enterprise deployment.
+
+**Layer 3 — Authority Resolver:** The IP moat. Evaluates spending limits against transfer amounts. Checks delegation chain depth (max 3). Validates approval tokens. Resolves role-based grants. Evaluates workflow state. This is the logic that caught the $15M wire — the agent's role carried a $500K limit, and Layer 3 computed `EXCEEDS_GRANT` before the gate ever ran.
+
+Every field carries a confidence score. Low-confidence fields default to the most conservative value. Ambiguous inputs submit to the gate with maximum restriction — fail-closed means govern more strictly, not block.
+
+**Shims available:**
+
+| Framework | What it handles |
 |---|---|
 | OpenAI | `tool_calls` array from Chat Completions API |
 | LangChain | `AgentAction`, tool call dict |
-| CrewAI | `Task` dict with agent role/backstory, `AgentAction` dict |
-
-**Wire transfer demo — end to end:**
-
-A LangChain agent proposes a $15,000,000 wire transfer. The agent's role carries a $500,000 spending limit. No approval token is present.
-
-```
-source_framework:  langchain
-raw_tool_name:     transfer_funds
-raw_amount:        $15,000,000
-raw_caller_role:   capital_allocator
-
-CNL output:
-  actor_class    : AGENT
-  action_class   : TRANSFER
-  target_class   : GROUP
-  scope          : UNBOUNDED
-  magnitude      : CRITICAL      ← $15M > $5M PE critical threshold
-  authorization  : EXCEEDS_GRANT ← $15M > $500K spending limit
-  timing         : ROUTINE
-  consent        : NONE          ← no approval token
-  reversibility  : IRREVERSIBLE  ← wire settles externally
-
-Gate verdict:    REFUSE
-Trace ID:        1a6965e9-0f75-401e-930a-e504da1f11f5
-Hard stop:       True
-Wire transfer:   BLOCKED
-Downstream:      NOT INVOKED
-```
-
-No LLM in the governance path. No GPU. No model calls. The wire never executes.
-
-The UIA source is in this repository. See `casa_uia/` — shims, CNL pipeline, and registries are all public. The constitutional registry, propagation engine, and gate source remain available under NDA.
-
+| CrewAI | `Task` dict with role/backstory, `AgentAction` dict |
 
 ---
 
-## Quick Integration
+## What CASA Is Not
 
-```python
-from casa_client import CASAClient, CanonicalActionVector
-from casa_client import ActorClass, ActionClass, TargetClass
-from casa_client import Scope, Magnitude, Authorization
-from casa_client import Timing, Consent, Reversibility, Verdict
+This distinction is precise, not rhetorical.
 
-client = CASAClient(gate_url="https://casa-gate.onrender.com", api_key="your-key")
+| CASA does NOT | Why it matters |
+|---|---|
+| Parse natural language | The prompt payload is opaque to the gate |
+| Use embeddings or vector similarity | No model weights, no GPU, no inference |
+| Call a secondary LLM | No model in the governance path |
+| Moderate text content | CASA governs execution structure, not expression |
+| Use ML libraries | Pure Python stdlib — numpy, torch, transformers: none |
+| Sample or approximate | 100% of evaluations traced, none skipped |
 
-result = client.evaluate(CanonicalActionVector(
-    actor_class   = ActorClass.AGENT,
-    action_class  = ActionClass.DELETE,
-    target_class  = TargetClass.DATA,
-    scope         = Scope.BOUNDED,
-    magnitude     = Magnitude.MATERIAL,
-    authorization = Authorization.WITHIN_GRANT,
-    timing        = Timing.ROUTINE,
-    consent       = Consent.EXPLICIT,
-    reversibility = Reversibility.REVERSIBLE,
-))
+The SIC uses TF-IDF term frequency scoring — a deterministic mathematical operation over a fixed vocabulary index. It is not a classifier in the ML sense. It contains no learned weights. It produces no probabilistic outputs. The same tokens always produce the same scores.
 
-if result.verdict == Verdict.REFUSE:
-    raise ExecutionBlocked(result.trace_id)
-
-if result.verdict == Verdict.GOVERN:
-    apply_constraints(result.constraints)
-
-proceed()
-```
-
-See `sdk/python/casa_client.py` for the full typed interface. See `docs/integration.md` for gateway, sidecar, and agent runtime patterns.
-
-This repository exposes the public interface, integration patterns, and validation layer. Enterprise runtime materials are available separately under NDA.
+An adversary who jailbreaks the model, poisons the prompt, or manipulates the instruction still faces the gate. The gate never read the text. It evaluated the structure of what was being requested.
 
 ---
 
-## Source Agnosticism
+## Enforcement Invariants
 
-CASA governs any structured execution request regardless of origin:
+These are not design goals. They are code-enforced invariants tested by the diligence suite on every deployment.
 
-- LLM tool calls and function calls
-- Human-initiated REST / GraphQL / RPC calls
-- Scheduled jobs (cron, task queues, batch pipelines)
-- Webhook-triggered workflows
-- Robotic process automation actions
-- Agent-to-agent messages in multi-agent orchestrations
-
-The Canonical Action Vector abstracts away the source. The same nine fields are derived whether the request comes from a model, a human, or an automated process. Execution source selection becomes a capability and cost decision — not a governance decision.
+| Invariant | Guarantee |
+|---|---|
+| **REFUSE** | `verdict == REFUSE` → no downstream system invoked. Unconditional. |
+| **Single-call** | At most one backend call per request. No retry loops. No fallbacks. |
+| **Determinism** | Same input + same config → same verdict + same trace hash. Always. |
+| **Fail-closed** | Gate startup fails if no hard-stop primitives defined. Errors → REFUSE. |
+| **No bypass** | No debug mode, no override flag, no bypass path in the codebase. |
+| **Trace completeness** | 100% of evaluations produce a CASA-T1 trace. None skipped. |
+| **SIC zero false negatives** | No REFUSE corpus case reaches ACCEPT. Tested on every deployment. |
 
 ---
 
 ## Validation
 
-CASA has been validated across four distinct proof scenarios.
-
 ### Project Polis — Multi-Agent Adversarial Enforcement
 
-20 agents. 14 cooperative. 6 adversarial archetypes: power accumulator, coalition builder, procedural saboteur, reputation assassin, forum troll, narrative controller.
+20 agents. 14 cooperative. 6 adversarial archetypes: power accumulator, coalition builder, procedural saboteur, reputation assassin, forum troll, narrative controller. 573 evaluations.
 
 | Metric | Result |
 |---|---|
-| Total governance evaluations | 573 |
 | False positives | 0 |
 | Bypasses | 0 |
 | Unprincipled divergences | 0 |
-
-→ Full summary
 
 ### CASA-FIN — Regulated Financial Stress
 
@@ -394,21 +322,31 @@ CASA has been validated across four distinct proof scenarios.
 | Procyclical feedback loops | 30 | 1 |
 | Forced asset sales | Baseline | −81% |
 
-→ Full summary
-
 ### Project Meridian — Cross-Model Sovereignty
 
-Same scenario. Two frontier models (Claude Sonnet 4, Gemini 2.5 Pro). Radically different behavioral profiles in baseline. REFUSE neg_ratio across both: 0.1924 — identical. Swap the model. The verdicts hold.
+Same scenario. Claude Sonnet 4, Gemini 2.5 Pro. Radically different behavioral profiles at baseline. REFUSE neg_ratio across both models: **0.1924 — identical.** Swap the model. The verdicts hold.
 
-→ Full summary
-
-### Cross-Model Validation — Three Providers
+### Cross-Model Validation
 
 52 prompts. 156 governed decisions. Zero unprincipled divergences across Claude, GPT-4, and Gemini.
 
-→ Full summary
+### SIC Corpus Validation
 
-Full proof scenario data — trace corpora, harness source, simulation methodology — is available under NDA. See `DILIGENCE.md` for the complete claim-to-evidence map.
+111 unique labeled cases. Zero false negatives. No harmful request reaches ACCEPT.
+
+---
+
+## Where CASA Sits in the Stack
+
+The AI agent governance market is forming in three distinct layers. CASA owns the execution layer.
+
+| Layer | Representative Tools | When It Operates | What It Governs |
+|---|---|---|---|
+| Pre-deployment testing | Promptfoo | Before deployment | Vulnerabilities, evals |
+| Runtime policy enforcement | Galileo Agent Control | At runtime | Content, behavior, observability |
+| **Execution governance** | **CASA** | **Pre-execution** | **Structural action vectors** |
+
+These are not competing tools. They are different layers of the same problem. Content-layer tools can be bypassed by a well-crafted prompt. CASA cannot — it never reads the content.
 
 ---
 
@@ -420,20 +358,59 @@ At 1M agent actions per day:
 |---|---|---|---|---|
 | LLM-as-judge | $1,000–$10,000 | 5–15s | ✗ | ✗ |
 | Safety classifier | $100–$1,000 | 200–500ms | ✗ | ✗ |
-| CASA | Commodity compute | 53–78ms | ✓ | ✓ |
+| **CASA** | **Commodity compute** | **53–78ms** | **✓** | **✓** |
 
 ---
 
-## Enforcement Invariants
+## Status
 
-| Invariant | Guarantee |
+| Component | Status |
 |---|---|
-| REFUSE | verdict == REFUSE → no downstream system invoked. Unconditional. |
-| Single-call | At most one downstream call. No retry loops. No fallbacks. |
-| Determinism | Same input + same config → same verdict + same trace + same hash. Always. |
-| Fail-closed | Errors → REFUSE. Missing fields → GOVERN. |
-| Sovereignty | No external actor can override a REFUSE verdict. |
-| Completeness | 100% of evaluations traced. Not sampled. |
+| USPTO Provisional Patent | Filed February 2026 — #63/987,813 |
+| Gate Engine | Production v4.1.0 |
+| Universal Intake Adapter | v1.0.0 — OpenAI, LangChain, CrewAI |
+| Semantic Intake Classifier | v1.0.0 — 1,723 exemplars, 0 false negatives |
+| Constitutional Registry | Locked v1.0.0 — 93 primitives, 279 edges |
+| Diligence Test Suite | v7.5 — 32 gate tests + 54 UIA tests |
+| Live Gate | https://casa-gate.onrender.com |
+| Cross-Model Validation | Complete — Claude, GPT-4, Gemini |
+| Project Polis | Complete — 573 evaluations, 0 bypasses |
+| CASA-FIN | Complete |
+| Domain Modules | CASA-FIN validated; HIPAA, ITAR, LEGAL, FERPA in specification |
+
+---
+
+## Quick Start
+
+```bash
+git clone https://github.com/The-Resonance-Institute/casa-runtime.git
+cd casa-runtime
+pip install requests
+```
+
+```python
+from casa_uia import CasaAdapter
+
+adapter = CasaAdapter(gate_url="https://casa-gate.onrender.com")
+
+result = adapter.evaluate(
+    framework="langchain",
+    action=agent_action,
+    domain="pe_fund"
+)
+
+if result.verdict == "REFUSE":
+    raise ExecutionBlocked(result.trace_id)
+elif result.verdict == "GOVERN":
+    apply_constraints(result.constraints)
+
+proceed()
+```
+
+→ See [QUICKSTART.md](QUICKSTART.md) for curl, Python, and framework examples.
+→ See [docs/integration.md](docs/integration.md) for gateway, sidecar, and embedded patterns.
+→ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full control plane specification.
+→ See [DILIGENCE.md](DILIGENCE.md) for the complete claim-to-evidence map.
 
 ---
 
@@ -441,98 +418,47 @@ At 1M agent actions per day:
 
 | Path | Contents |
 |---|---|
-| `ARCHITECTURE.md` | Full control plane architecture and evaluation pipeline |
-| `CANONICAL_ACTION_VECTOR.md` | Nine-field CAV specification with derivation rules and examples |
-| `TRACE_FORMAT.md` | CASA-T1 audit trace schema |
-| `docs/integration.md` | Integration patterns: gateway, sidecar, agent runtime, embedded |
-| `sdk/python/casa_client.py` | Typed Python client showing the full call contract |
-| `examples/enterprise_dashboard/` | Live dashboard: 10 agents, 26 tools, 45 evaluations — open in browser |
-| `examples/pe_fund_demo/` | PE fund parallel worlds demo: 8 steps, real gate verdicts, live trace hashes |
-| `QUICKSTART.md` | Zero to governed in 5 minutes — curl, Python, LangChain, CrewAI |
+| `casa_uia/` | Universal Intake Adapter — shims, CNL pipeline, registries |
+| `sdk/python/casa_client.py` | Typed Python client — full call contract |
+| `examples/pe_fund_demo/` | PE fund parallel worlds demo — real gate verdicts |
+| `examples/enterprise_dashboard/` | Live dashboard — 10 agents, 26 tools, 45 evaluations |
+| `docs/integration.md` | Integration patterns — gateway, sidecar, agent runtime |
 | `validation/` | Proof scenario summaries |
+| `ARCHITECTURE.md` | Full control plane architecture |
+| `CANONICAL_ACTION_VECTOR.md` | Nine-field CAV specification |
+| `TRACE_FORMAT.md` | CASA-T1 audit trace schema |
+| `QUICKSTART.md` | Zero to governed in 5 minutes |
+| `DILIGENCE.md` | Claim-to-evidence map |
+
+The constitutional registry, propagation engine, and gate source are available under NDA.
 
 ---
 
-## For Security Buyers — CASA as Agent Firewall
+## For Security and Infrastructure Buyers
 
-The network firewall solved a 1990s problem: untrusted traffic reaching trusted systems. It sat at the boundary, evaluated packets before they entered, and blocked based on deterministic rules. It did not interpret packet content. It evaluated packet structure.
+The network firewall solved a 1990s problem: untrusted traffic reaching trusted systems. It sat at the boundary, evaluated packets by structure, and blocked based on deterministic rules. It did not read packet content.
 
-The enterprise agent stack has the same problem in a new form. Agents have credentials. Agents have tool access. Agents execute actions with real-world consequences. There is no boundary control. An agent that has been jailbroken, manipulated, or misconfigured still has full access to every tool it has been granted. Nothing sits between the agent's decision and real-world execution.
+The enterprise agent stack has the same problem in a new form. Agents have credentials. Agents have tool access. Agents execute actions with real-world consequences. An agent that has been jailbroken, manipulated, or misconfigured still has full access to every tool it was granted. Nothing sits between the agent's decision and execution.
 
-CASA is the agent firewall. It sits at the execution boundary, evaluates action requests before they fire, and blocks based on a deterministic constitutional graph. It does not interpret content. It evaluates execution structure.
+CASA is the agent firewall.
 
 | Network Firewall | CASA Agent Gate |
 |---|---|
 | Sits at network boundary | Sits at execution boundary |
-| Evaluates packet metadata | Evaluates action vector metadata |
-| Blocks by rule | Blocks by constitutional graph |
+| Evaluates packet structure | Evaluates action vector structure |
+| Blocks by deterministic rule | Blocks by constitutional graph |
 | Does not read packet content | Does not read action content |
-| Deterministic | Deterministic |
-| Audit log | SHA-256 trace hash |
 | Vendor-agnostic | Model-agnostic |
+| Audit log | SHA-256 trace hash |
 
-CASA integrates with any agent framework, any model provider, and any execution environment. It requires no changes to model behavior and no changes to downstream systems. It is a gate, not a wrapper.
+CASA requires no changes to your model, no changes to your agent framework, and no changes to your downstream systems. It is a gate, not a wrapper. It integrates with any stack in a single function call.
 
-For XDR integration, HIPAA/FINRA compliance deployments, or enterprise pilot evaluation: contact@resonanceinstitutellc.com
-
----
-
-## Where CASA Sits in the Stack
-
-The AI agent governance market is forming in three distinct layers. CASA owns the execution layer.
-
-| Layer | Representative Tools | What It Does | When It Operates |
-|---|---|---|---|
-| Pre-deployment testing | Promptfoo (acquired by OpenAI, March 2026) | Red-teaming, vulnerability scanning, evals | Before deployment |
-| Runtime policy enforcement | Galileo Agent Control (released March 2026) | Behavioral policies, content guardrails, observability | At runtime — content layer |
-| **Execution governance** | **CASA** | **Deterministic admissibility gate — structural vector evaluation** | **Pre-execution — before any system is touched** |
-
-These are not competing tools. They are different layers of the same problem. Promptfoo finds vulnerabilities before you ship. Galileo enforces behavioral policies at runtime. CASA makes a deterministic admissibility decision on every action before it executes — based on the structural vector of the request, not its content.
-
-CASA does not read what agents say. CASA decides whether agents are allowed to act.
-
-The distinction matters because content-layer tools can be bypassed. A jailbroken prompt, a manipulated instruction, or a carefully worded request can look compliant at the content layer while executing a catastrophic action. CASA never reads the content. The gate evaluates the structure of what is being requested — who is asking, what they want to do, to whom, with what authorization, at what magnitude, with what reversibility. That vector cannot be jailbroken.
+For XDR integration, HIPAA/FINRA compliance deployments, or enterprise pilot evaluation:
+**contact@resonanceinstitutellc.com**
 
 ---
 
-## Why This Matters
+*Pre-NDA materials available immediately. Full technical package — trace corpora, simulation harness, EU AI Act compliance mapping — under NDA.*
 
-Modern AI systems are moving from conversational interfaces to autonomous tool-using agents. The critical safety problem is no longer what models say. It is what they are allowed to execute.
-
-Current architectures have a data plane — model inference, API processing, job execution. There is no control plane. CASA is the control plane.
-
----
-
-## Status
-
-CASA is production-ready governance infrastructure. The architecture has been validated through multiple simulation environments and cross-model testing. A provisional patent covering the core architecture has been filed.
-
-| Component | Status |
-|---|---|
-| USPTO Provisional Patent | Filed February 2026 — #63/987,813 |
-| Gate Engine | Production v4.0.0 |
-| Universal Intake Adapter | v1.0.0 — OpenAI, LangChain, CrewAI shims |
-| CNL Pipeline | Three-layer — Extractor, Classifier, Authority Resolver |
-| Test Coverage | 54 tests passing — unit, integration, red team |
-| Live Gate Endpoint | https://casa-gate.onrender.com |
-| Constitutional Registry | Locked v1.0.0 (93 primitives, 279 edges) |
-| Cross-Model Validation | Complete — Claude, GPT-4, Gemini |
-| Project Polis | Complete — 573 evaluations |
-| CASA-FIN | Complete |
-| Domain Modules | CASA-FIN validated; HIPAA, ITAR, LEGAL, FERPA in specification |
-
-For a complete map of every claim in this repository to its evidence tier — what is public, what is pre-NDA, and what is post-NDA — see `DILIGENCE.md`.
-
----
-
-Inquiries regarding research collaboration, enterprise evaluation, or commercial licensing:
-
-**Christopher T. Herndon · Founder, The Resonance Institute, LLC**
-contact@resonanceinstitutellc.com
-
-Pre-NDA materials available immediately. Full technical package under NDA.
-
----
-
-*© 2025–2026 Christopher T. Herndon / The Resonance Institute, LLC*
-*USPTO Provisional Application #63/987,813*
+© 2025–2026 Christopher T. Herndon / The Resonance Institute, LLC
+USPTO Provisional Application #63/987,813

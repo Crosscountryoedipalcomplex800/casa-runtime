@@ -1,14 +1,22 @@
 """
-CASA UIA — Core Data Models
-============================
-Intermediate Intent Object (IIO), Canonical Action Vector (CAV),
+MORIS UIA — Core Data Models
+==============================
+Intermediate Intent Object (IIO), Canonical Action Vector (CAV) v2.0,
 normalization metadata, and all supporting enums.
 
-Architectural Law #2: The normalizer must never hallucinate completeness.
-Every field carries an explicit confidence score and normalization status.
+CAV v2.0 adds three intent fields and one context field to the original
+nine action fields. MORIS evaluates the full bidirectional moral frame:
+intent → action. Neither side alone is sufficient.
+
+Architectural Laws:
+  #1: Shims extract. They do not govern.
+  #2: The normalizer must never hallucinate completeness.
+  #3: The CAV is the sole input to the MORIS evaluation engine.
+  #4: No natural language is parsed by the gate itself.
 
 © 2025-2026 Christopher T. Herndon / The Resonance Institute, LLC
 USPTO Provisional Patent #63/987,813
+MORIS: Moral Operating Runtime Infrastructure System
 """
 
 from __future__ import annotations
@@ -20,70 +28,133 @@ from typing import Any, Dict, List, Optional
 
 
 # ─────────────────────────────────────────────────────────────
-# CAV Enums (matches live gate schema exactly)
+# CAV v2.0 Enums — Intent Frame (new in v2.0)
+# ─────────────────────────────────────────────────────────────
+
+class IntentClass(str, Enum):
+    """
+    What the actor is trying to accomplish.
+    Derived from the input side of the interaction by Layer 0.
+    """
+    INFORM    = "INFORM"     # Actor seeks factual information or explanation
+    CREATE    = "CREATE"     # Actor seeks to produce something new
+    MODIFY    = "MODIFY"     # Actor seeks to change an existing state
+    DECEIVE   = "DECEIVE"    # Actor seeks to produce a false belief in another
+    HARM      = "HARM"       # Actor seeks to damage a person, system, or relationship
+    EVADE     = "EVADE"      # Actor seeks to avoid accountability or oversight
+    ESCALATE  = "ESCALATE"   # Actor seeks to increase their authority or access
+    EXPLORE   = "EXPLORE"    # Actor is genuinely inquiring without predetermined outcome
+    UNCLEAR   = "UNCLEAR"    # Intent cannot be reliably classified from available signal
+
+
+class IntentAlignment(str, Enum):
+    """
+    Relationship between stated intent and inferable actual intent.
+    DIVERGENT is the primary deception signal.
+    """
+    COHERENT      = "COHERENT"      # Stated intent and request structure are consistent
+    DIVERGENT     = "DIVERGENT"     # Stated intent and request structure point in different directions
+    ABSENT        = "ABSENT"        # No stated intent; request arrived without framing
+    UNVERIFIABLE  = "UNVERIFIABLE"  # Insufficient signal to assess alignment
+
+
+class ContextRisk(str, Enum):
+    """
+    Risk level contributed by conversation history, role, and domain.
+    Captures accumulated risk signal — a single request may be benign
+    in isolation but dangerous given what preceded it.
+    """
+    BASELINE  = "BASELINE"   # No elevated risk; first interaction or clean history
+    ELEVATED  = "ELEVATED"   # Prior exchanges show escalating pattern or drift
+    HIGH      = "HIGH"       # Context contains clear indicators of harmful intent
+    CRITICAL  = "CRITICAL"   # Context establishes near-certain harmful intent
+
+
+class DeliveryMechanism(str, Enum):
+    """
+    How the AI output reaches the world.
+    The mechanism does not change the moral constraint.
+    It informs which primitives are most contextually relevant.
+    """
+    CHAT                = "CHAT"
+    AGENT_TOOL          = "AGENT_TOOL"
+    RECOMMENDATION      = "RECOMMENDATION"
+    CONTENT_GENERATION  = "CONTENT_GENERATION"
+    API                 = "API"
+    STREAMING           = "STREAMING"
+    SCHEDULED           = "SCHEDULED"
+
+
+# ─────────────────────────────────────────────────────────────
+# CAV Enums — Action Frame (unchanged from v1.0)
 # ─────────────────────────────────────────────────────────────
 
 class ActorClass(str, Enum):
-    HUMAN = "HUMAN"
-    AGENT = "AGENT"
-    SERVICE = "SERVICE"
+    HUMAN     = "HUMAN"
+    AGENT     = "AGENT"
+    SERVICE   = "SERVICE"
     SCHEDULED = "SCHEDULED"
-    EXTERNAL = "EXTERNAL"
+    EXTERNAL  = "EXTERNAL"
 
 
 class ActionClass(str, Enum):
-    QUERY = "QUERY"
-    CREATE = "CREATE"
-    MODIFY = "MODIFY"
-    DELETE = "DELETE"
-    TRANSFER = "TRANSFER"
-    EXECUTE = "EXECUTE"
-    ESCALATE = "ESCALATE"
-    COMMUNICATE = "COMMUNICATE"  # Extended from gate spec; maps to EXECUTE at gate boundary
+    QUERY       = "QUERY"
+    GENERATE    = "GENERATE"    # New in v2.0 — covers LLM text/code/content generation
+    CREATE      = "CREATE"
+    MODIFY      = "MODIFY"
+    DELETE      = "DELETE"
+    TRANSFER    = "TRANSFER"
+    EXECUTE     = "EXECUTE"
+    ESCALATE    = "ESCALATE"
+    RECOMMEND   = "RECOMMEND"   # New in v2.0 — covers recommendation engine outputs
+    COMMUNICATE = "COMMUNICATE" # Legacy; maps to GENERATE at gate boundary
 
 
 class TargetClass(str, Enum):
-    SELF = "SELF"
-    DATA = "DATA"
-    RESOURCE = "RESOURCE"
-    PRINCIPAL = "PRINCIPAL"
-    GROUP = "GROUP"
-    SYSTEM = "SYSTEM"
+    SELF        = "SELF"
+    PERSON      = "PERSON"      # New in v2.0 — explicit individual human target
+    DATA        = "DATA"
+    CONTENT     = "CONTENT"     # New in v2.0 — text, media, generated material
+    RESOURCE    = "RESOURCE"
+    PRINCIPAL   = "PRINCIPAL"
+    GROUP       = "GROUP"
+    SYSTEM      = "SYSTEM"
+    ENVIRONMENT = "ENVIRONMENT" # New in v2.0 — physical or digital environment
 
 
 class Scope(str, Enum):
-    SINGLE = "SINGLE"
-    BOUNDED = "BOUNDED"
+    SINGLE    = "SINGLE"
+    BOUNDED   = "BOUNDED"
     UNBOUNDED = "UNBOUNDED"
 
 
 class Magnitude(str, Enum):
-    TRIVIAL = "TRIVIAL"
+    TRIVIAL  = "TRIVIAL"
     MATERIAL = "MATERIAL"
     CRITICAL = "CRITICAL"
 
 
 class Authorization(str, Enum):
-    WITHIN_GRANT = "WITHIN_GRANT"
-    AT_LIMIT = "AT_LIMIT"
+    WITHIN_GRANT  = "WITHIN_GRANT"
+    AT_LIMIT      = "AT_LIMIT"
     EXCEEDS_GRANT = "EXCEEDS_GRANT"
 
 
 class Timing(str, Enum):
-    ROUTINE = "ROUTINE"
+    ROUTINE   = "ROUTINE"
     EXPEDITED = "EXPEDITED"
     IMMEDIATE = "IMMEDIATE"
 
 
 class Consent(str, Enum):
     EXPLICIT = "EXPLICIT"
-    IMPLIED = "IMPLIED"
-    NONE = "NONE"
+    IMPLIED  = "IMPLIED"
+    NONE     = "NONE"
 
 
 class Reversibility(str, Enum):
-    REVERSIBLE = "REVERSIBLE"
-    COSTLY = "COSTLY"
+    REVERSIBLE   = "REVERSIBLE"
+    COSTLY       = "COSTLY"
     IRREVERSIBLE = "IRREVERSIBLE"
 
 
@@ -92,19 +163,22 @@ class Reversibility(str, Enum):
 # ─────────────────────────────────────────────────────────────
 
 class NormalizationStatus(str, Enum):
-    COMPLETE = "COMPLETE"       # All nine fields resolved with high confidence
-    PARTIAL = "PARTIAL"         # Some fields resolved; defaults applied to remainder
-    AMBIGUOUS = "AMBIGUOUS"     # Low confidence on one or more fields; gate escalates to GOVERN
-    FAILED = "FAILED"           # Cannot produce a defensible CAV; submission blocked
+    COMPLETE  = "COMPLETE"   # All twelve fields resolved with high confidence
+    PARTIAL   = "PARTIAL"    # Some fields resolved; defaults applied to remainder
+    AMBIGUOUS = "AMBIGUOUS"  # Low confidence on one or more fields; gate escalates to GOVERN
+    FAILED    = "FAILED"     # Cannot produce a defensible CAV; submission blocked
 
 
 # ─────────────────────────────────────────────────────────────
-# Intermediate Intent Object (IIO)
+# Intermediate Intent Object (IIO) v2.0
 # ─────────────────────────────────────────────────────────────
 #
 # Produced by shims. Contains raw extracted fields only.
 # No governance logic. No CAV field inference. No defaults.
 # Architectural Law #1: Shims extract. They do not govern.
+#
+# v2.0 adds intent-side fields: raw_user_input, raw_conversation_history,
+# raw_session_context, and raw_delivery_mechanism.
 # ─────────────────────────────────────────────────────────────
 
 @dataclass
@@ -115,13 +189,25 @@ class IntermediateIntentObject:
     All fields are prefixed raw_ to enforce the extraction-only contract.
     The CNL reads these fields and produces CAV values.
     A shim may leave any field None if it cannot extract it.
+
+    v2.0: Intent-side fields added. Shims that capture the user input
+    side of an interaction populate raw_user_input and optionally
+    raw_conversation_history. Layer 0 classifies these into intent CAV fields.
     """
 
     # Source metadata
-    source_framework: str                           # "openai_tool_call" | "langchain" | "custom_json"
+    source_framework: str                           # "openai_tool_call" | "langchain" | "chat" | ...
     raw_request_id: Optional[str] = None            # Passthrough request correlation ID
 
-    # Layer 1 extractions — direct structural fields
+    # ── Intent-side fields (new in v2.0) ─────────────────────
+    # The input that triggered or accompanied this proposed action.
+    # Shims populate these when the user input is available.
+    raw_user_input: Optional[str] = None            # The raw user message or prompt
+    raw_conversation_history: Optional[List[Dict[str, str]]] = None  # Prior turns [{role, content}]
+    raw_session_context: Optional[Dict[str, Any]] = None  # Session metadata (domain, role, flags)
+    raw_delivery_mechanism: Optional[str] = None    # How output reaches world: "chat"|"api"|"agent_tool"|...
+
+    # ── Action-side fields (unchanged from v1.0) ──────────────
     raw_tool_name: Optional[str] = None             # Tool or endpoint name as called
     raw_tool_args: Optional[Dict[str, Any]] = None  # Tool arguments, unparsed
     raw_caller_id: Optional[str] = None             # Agent/user/service identity string
@@ -215,15 +301,27 @@ class NormalizationMetadata:
 
 
 # ─────────────────────────────────────────────────────────────
-# Canonical Action Vector (with metadata)
+# Canonical Action Vector v2.0 (with metadata)
 # ─────────────────────────────────────────────────────────────
 
 @dataclass
 class CanonicalActionVector:
     """
-    The nine-field governance input to the CASA gate.
+    The twelve-field governance input to the MORIS evaluation engine.
+    CAV v2.0 adds the full intent frame to the original nine action fields.
+
+    MORIS evaluates the relationship between intent and proposed action.
+    Neither side alone is sufficient for correct moral evaluation.
+
     When produced by the CNL, always carries normalization_metadata.
     """
+
+    # ── Intent Frame (new in v2.0) ────────────────────────────
+    intent_class: IntentClass           # What the actor is trying to accomplish
+    intent_alignment: IntentAlignment   # Relationship between stated and actual intent
+    context_risk: ContextRisk           # Risk from conversation history and domain
+
+    # ── Action Frame (unchanged from v1.0) ───────────────────
     actor_class: ActorClass
     action_class: ActionClass
     target_class: TargetClass
@@ -234,50 +332,68 @@ class CanonicalActionVector:
     consent: Consent
     reversibility: Reversibility
 
+    # ── Context Frame (new in v2.0) ───────────────────────────
+    delivery_mechanism: DeliveryMechanism
+
     # Populated when produced via CNL normalization
     normalization_metadata: Optional[NormalizationMetadata] = None
 
     # Maps UIA action_class to gate semantic action_class
     _ACTION_TO_GATE = {
-        "QUERY":     "QUERY",
-        "CREATE":    "CREATE",
-        "MODIFY":    "MANIPULATE",
-        "DELETE":    "MANIPULATE",
-        "TRANSFER":  "MANIPULATE",
-        "EXECUTE":   "MANIPULATE",
-        "ESCALATE":  "MANIPULATE",
+        "QUERY":       "QUERY",
+        "GENERATE":    "ADVISE",
+        "CREATE":      "CREATE",
+        "MODIFY":      "MANIPULATE",
+        "DELETE":      "MANIPULATE",
+        "TRANSFER":    "MANIPULATE",
+        "EXECUTE":     "MANIPULATE",
+        "ESCALATE":    "MANIPULATE",
+        "RECOMMEND":   "ADVISE",
         "COMMUNICATE": "ADVISE",
     }
 
     # Maps UIA target_class to gate semantic target_type
     _TARGET_TO_GATE = {
-        "SELF":      "SELF",
-        "DATA":      "INFORMATION",
-        "RESOURCE":  "INSTITUTION",
-        "PRINCIPAL": "PERSON_CONSENTING",
-        "GROUP":     "GROUP",
-        "SYSTEM":    "INSTITUTION",
+        "SELF":        "SELF",
+        "PERSON":      "PERSON_CONSENTING",
+        "DATA":        "INFORMATION",
+        "CONTENT":     "INFORMATION",
+        "RESOURCE":    "INSTITUTION",
+        "PRINCIPAL":   "PERSON_CONSENTING",
+        "GROUP":       "GROUP",
+        "SYSTEM":      "INSTITUTION",
+        "ENVIRONMENT": "INSTITUTION",
     }
 
     def to_gate_dict(self) -> Dict[str, str]:
         """
         Serialize to the live gate API format.
-        The live gate uses a semantic schema: action_class, target_type, content.
-        UIA CAV fields are translated via registry maps.
+        Includes intent frame signals as content context.
         """
         gate_action = self._ACTION_TO_GATE.get(self.action_class.value, "MANIPULATE")
         gate_target = self._TARGET_TO_GATE.get(self.target_class.value, "INSTITUTION")
 
-        # Build a content summary from the high-risk CAV fields for gate context
+        # Build risk signal summary from high-risk fields
         risk_signals = []
+
+        # Intent signals (most important — new in v2.0)
+        if self.intent_class.value in ("DECEIVE", "HARM", "EVADE", "ESCALATE"):
+            risk_signals.append(f"intent={self.intent_class.value}")
+        if self.intent_alignment == IntentAlignment.DIVERGENT:
+            risk_signals.append("intent_divergent")
+        if self.context_risk.value in ("HIGH", "CRITICAL"):
+            risk_signals.append(f"context_risk={self.context_risk.value}")
+
+        # Action signals
         if self.authorization.value == "EXCEEDS_GRANT":
-            risk_signals.append("exceeds authorization")
+            risk_signals.append("exceeds_authorization")
         if self.consent.value == "NONE":
-            risk_signals.append("no consent")
+            risk_signals.append("no_consent")
         if self.magnitude.value == "CRITICAL":
-            risk_signals.append("critical magnitude")
+            risk_signals.append("critical_magnitude")
         if self.reversibility.value == "IRREVERSIBLE":
             risk_signals.append("irreversible")
+
         content = "; ".join(risk_signals) if risk_signals else ""
 
         return {
@@ -287,17 +403,24 @@ class CanonicalActionVector:
         }
 
     def to_dict(self) -> Dict[str, str]:
-        """Full serialization including internal action classes."""
+        """Full serialization of all twelve CAV fields."""
         return {
-            "actor_class": self.actor_class.value,
-            "action_class": self.action_class.value,
-            "target_class": self.target_class.value,
-            "scope": self.scope.value,
-            "magnitude": self.magnitude.value,
-            "authorization": self.authorization.value,
-            "timing": self.timing.value,
-            "consent": self.consent.value,
-            "reversibility": self.reversibility.value,
+            # Intent frame
+            "intent_class":       self.intent_class.value,
+            "intent_alignment":   self.intent_alignment.value,
+            "context_risk":       self.context_risk.value,
+            # Action frame
+            "actor_class":        self.actor_class.value,
+            "action_class":       self.action_class.value,
+            "target_class":       self.target_class.value,
+            "scope":              self.scope.value,
+            "magnitude":          self.magnitude.value,
+            "authorization":      self.authorization.value,
+            "timing":             self.timing.value,
+            "consent":            self.consent.value,
+            "reversibility":      self.reversibility.value,
+            # Context frame
+            "delivery_mechanism": self.delivery_mechanism.value,
         }
 
 

